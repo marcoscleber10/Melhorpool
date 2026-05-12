@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LiquidityPro Terminal - Monitoramento DeFi Avançado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        body {
+            background: #0a0e1a;
+            color: #e2e8f0;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(56, 189, 248, 0.1);
+        }
+        .gradient-border {
+            position: relative;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, #38bdf8, #818cf8, #c084fc);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+        .metric-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+            border: 1px solid rgba(56, 189, 248, 0.15);
+            transition: all 0.3s ease;
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(56, 189, 248, 0.4);
+            box-shadow: 0 10px 40px rgba(56, 189, 248, 0.15);
+        }
+        .pool-row {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            transition: all 0.2s ease;
+        }
+        .pool-row:hover {
+            background: rgba(51, 65, 85, 0.6);
+            border-color: rgba(56, 189, 248, 0.3);
+        }
+        .pulse-dot {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        .glow-text {
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+        .positive { color: #34d399; }
+        .negative { color: #f87171; }
+        .warning { color: #fbbf24; }
+        .info { color: #38bdf8; }
+        
+        /* Scrollbar customizada */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569; 
+        }
+        
+        .alert-banner {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        
+        .range-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #1e293b;
+            outline: none;
+        }
+        .range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+        
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .badge-ethereum { background: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); }
+        .badge-solana { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3); }
+        .badge-base { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.3); }
+        .badge-arbitrum { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.3); }
+        .badge-polygon { background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(192, 132, 252, 0.3); }
+        .badge-bsc { background: rgba(234, 179, 8, 0.2); color: #facc15; border: 1px solid rgba(250, 204, 21, 0.3); }
+        
+        .loading-skeleton {
+            background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body class="min-h-screen overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 z-50 glass-panel border-b border-slate-700/50">
+        <div class="flex items-center justify-between px-6 py-3">
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-layer-group text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-white tracking-tight">LiquidityPro<span class="text-cyan-400">Terminal</span></h1>
+                        <p class="text-xs text-slate-400">Concentrated Liquidity Analytics</p>
+                    </div>
+                </div>
+                <div class="h-6 w-px bg-slate-700 mx-2"></div>
+                <div class="flex items-center gap-2 text-xs">
+                    <span class="flex items-center gap-1.5 text-emerald-400">
+                        <span class="w-2 h-2 bg-emerald-400 rounded-full pulse-dot"></span>
+                        Live
+                    </span>
+                    <span class="text-slate-500">|</span>
+                    <span class="text-slate-400 mono" id="lastUpdate">--:--:--</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 rounded-lg border border-slate-700">
+                    <i class="fas fa-search text-slate-400 text-sm"></i>
+                    <input type="text" placeholder="Buscar pools..." class="bg-transparent border-none outline-none text-sm text-slate-300 w-48 placeholder-slate-500">
+                </div>
+                <button onclick="toggleRefresh()" class="p-2 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-cyan-400">
+                    <i class="fas fa-sync-alt" id="refreshIcon"></i>
+                </button>
+                <button onclick="toggleAlerts()" class="relative p-2 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-cyan-400">
+                    <i class="fas fa-bell"></i>
+                    <span id="alertBadge" class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full hidden"></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="pt-20 pb-8 px-6 max-w-[1920px] mx-auto">
+        
+        <!-- Alertas -->
+        <div id="alertsContainer" class="fixed top-20 right-6 z-40 space-y-2 max-w-md"></div>
+
+        <!-- Métricas Principais -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="metric-card rounded-xl p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-slate-400 text-sm font-medium">TVL Total</span>
+                    <i class="fas fa-wallet text-cyan-400"></i>
+                </div>
+                <div class="text-2xl font-bold text-white mono" id="totalTVL">$2.847M</div>
+                <div class="flex items-center gap-2 mt-2 text-xs">
+                    <span class="positive flex items-center gap-1">
+                        <i class="fas fa-arrow-up"></i> 12.4%
+                    </span>
+                    <span class="text-slate-500">vs 24h</span>
+                </div>
+            </div>
+
+            <div class="metric-card rounded-xl p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-slate-400 text-sm font-medium">Volume 24h</span>
+                    <i class="fas fa-chart-line text-purple-400"></i>
+                </div>
+                <div class="text-2xl font-bold text-white mono" id="totalVolume">$847.2K</div>
+                <div class="flex items-center gap-2 mt-2 text-xs">
+                    <span class="positive flex items-center gap-1">
+                        <i class="fas fa-arrow-up"></i> 8.2%
+                    </span>
+                    <span class="text-slate-500">vs ontem</span>
+                </div>
+            </div>
+
+            <div class="metric-card rounded-xl p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-slate-400 text-sm font-medium">Fees Acumuladas</span>
+                    <i class="fas fa-coins text-yellow-400"></i>
+                </div>
+                <div class="text-2xl font-bold text-white mono" id="totalFees">$42.8K</div>
+                <div class="flex items-center gap-2 mt-2 text-xs">
+                    <span class="positive flex items-center gap-1">
+                        <i class="fas fa-arrow-up"></i> 15.7%
+                    </span>
+                    <span class="text-slate-500">este mês</span>
+                </div>
+            </div>
+
+            <div class="metric-card rounded-xl p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-slate-400 text-sm font-medium">Pools Ativas</span>
+                    <i class="fas fa-layer-group text-emerald-400"></i>
+                </div>
+                <div class="text-2xl font-bold text-white mono" id="activePools">5</div>
+                <div class="flex items-center gap-2 mt-2 text-xs">
+                    <span class="text-slate-400">3 in-range</span>
+                    <span class="text-slate-500">|</span>
+                    <span class="warning">2 out-range</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros e Controles -->
+        <div class="gradient-border rounded-xl p-4 mb-6">
+            <div class="flex flex-wrap items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <label class="text-sm text-slate-400">Rede:</label>
+                    <select id="networkFilter" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-300 outline-none focus:border-cyan-400">
+                        <option value="all">Todas</option>
+                        <option value="ethereum">Ethereum</option>
+                        <option value="base">Base</option>
+                        <option value="arbitrum">Arbitrum</option>
+                        <option value="polygon">Polygon</option>
+                        <option value="bsc">BSC</option>
+                        <option value="solana">Solana</option>
+                    </select>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <label class="text-sm text-slate-400">Protocolo:</label>
+                    <select id="protocolFilter" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-300 outline-none focus:border-cyan-400">
+                        <option value="all">Todos</option>
+                        <option value="uniswap">Uniswap v3/v4</option>
+                        <option value="orca">Orca</option>
+                        <option value="byreal">Byreal</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <label class="text-sm text-slate-400">Categoria:</label>
+                    <select id="categoryFilter" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-300 outline-none focus:border-cyan-400">
+                        <option value="all">Todas</option>
+                        <option value="crypto">Criptomoedas</option>
+                        <option value="stable">Stablecoins</option>
+                        <option value="stocks">Ações Tokenizadas</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <label class="text-sm text-slate-400">Ordenar:</label>
+                    <select id="sortFilter" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-300 outline-none focus:border-cyan-400">
+                        <option value="apr">APR</option>
+                        <option value="tvl">TVL</option>
+                        <option value="volume">Volume</option>
+                        <option value="fees">Fees</option>
+                        <option value="score">Score</option>
+                    </select>
+                </div>
+
+                <div class="flex-1"></div>
+
+                <button onclick="exportData()" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm text-slate-300 transition-colors flex items-center gap-2">
+                    <i class="fas fa-download"></i>
+                    Exportar CSV
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Lista de Pools -->
+            <div class="lg:col-span-2 space-y-4">
+                <div class="gradient-border rounded-xl overflow-hidden">
+                    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-700/50 bg-slate-800/30">
+                        <h2 class="font-semibold text-white flex items-center gap-2">
+                            <i class="fas fa-list text-cyan-400"></i>
+                            Suas Pools (<span id="poolCount">5</span>)
+                        </h2>
+                        <div class="flex items-center gap-2">
+                            <button class="px-3 py-1 bg-cyan-500/20 text-cyan-400 rounded-lg text-xs font-medium border border-cyan-500/30">
+                                5 Ativas
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="divide-y divide-slate-700/30" id="poolsList">
+                        <!-- Pools serão inseridas via JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Análise Técnica -->
+                <div class="gradient-border rounded-xl p-5">
+                    <h3 class="font-semibold text-white mb-4 flex items-center gap-2">
+                        <i class="fas fa-chart-candlestick text-purple-400"></i>
+                        Análise Técnica - <span id="selectedPair" class="text-cyan-400">ETH/USDC</span>
+                    </h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                        <div class="bg-slate-800/50 rounded-lg p-3">
+                            <div class="text-xs text-slate-400 mb-1">RSI (14)</div>
+                            <div class="text-lg font-bold text-white mono" id="rsiValue">58.4</div>
+                            <div class="text-xs text-emerald-400">Neutro</div>
+                        </div>
+                        <div class="bg-slate-800/50 rounded-lg p-3">
+                            <div class="text-xs text-slate-400 mb-1">ATR</div>
+                            <div class="text-lg font-bold text-white mono" id="atrValue">2.4%</div>
+                            <div class="text-xs text-slate-400">Volatilidade</div>
+                        </div>
+                        <div class="bg-slate-800/50 rounded-lg p-3">
+                            <div class="text-xs text-slate-400 mb-1">Suporte</div>
+                            <div class="text-lg font-bold text-emerald-400 mono" id="supportLevel">$3,240</div>
+                            <div class="text-xs text-slate-400">-2.1%</div>
+                        </div>
+                        <div class="bg-slate-8Aqui está uma plataforma profissional completa de monitoramento de pools de liquidez concentrada:
+
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LiquidityPro Terminal - Monitoramento DeFi Avançado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        body {
+            background: #0a0e1a;
+            color: #e2e8f0;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(56, 189, 248, 0.1);
+        }
+        .gradient-border {
+            position: relative;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, #38bdf8, #818cf8, #c084fc);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+        .metric-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+            border: 1px solid rgba(56, 189, 248, 0.15);
+            transition: all 0.3s ease;
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(56, 189, 248, 0.4);
+            box-shadow: 0 10px 40px rgba(56, 189, 248, 0.15);
+        }
+        .pool-row {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            transition: all 0.2s ease;
+        }
+        .pool-row:hover {
+            background: rgba(51, 65, 85, 0.6);
+            border-color: rgba(56, 189, 248, 0.3);
+        }
+        .pulse-dot {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        .glow-text {
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+        .positive { color: #34d399; }
+        .negative { color: #f87171; }
+        .warning { color: #fbbf24; }
+        .info { color: #38bdf8; }
+        
+        /* Scrollbar customizada */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569; 
+        }
+        
+        .alert-banner {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        
+        .range-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #1e293b;
+            outline: none;
+        }
+        .range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+        
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .badge-ethereum { background: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); }
+        .badge-solana { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3); }
+        .badge-base { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.3); }
+        .badge-arbitrum { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.3); }
+        .badge-polygon { background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(192, 132, 252, 0.3); }
+        .badge-bsc { background: rgba(234, 179, 8, 0.2); color: #facc15; border: 1px solid rgba(250, 204, 21, 0.3); }
+        
+        .loading-skeleton {
+            background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body class="min-h-screen overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 z-50 glass-panel border-b border-slate-700/50">
+        <div class="flex items-center justify-between px-6 py-3">
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-layer-group text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-white tracking-tight">LiquidityPro<span class="text-cyan-400">Terminal</span></h1>
+                        <p class="text-xs text-slate-400">Concentrated Liquidity Analytics</p>
+                    </div>
+                </div>
+                <div class="h-6 w-px bg-slate-700 mx-2"></div>
+                <div class="flex items-center gap-2 text-xs">
+                    <span class="flex items-center gap-1.5 text-emerald-400">
+                        <span class="w-2 h-2 bg-emerald-400 rounded-full pulse-dot"></span>
+                        Live
+                    </span>
+                    <span class="text-slate-500">|</span>
+                    <span class="text-slate-400 mono" id="lastUpdate">--:--:--</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 rounded-lg border border-slate-700">
+                    <i class="fas fa-search text-slate-400 text-sm"></i>
+                    <input type="text" placeholder="Buscar pools..." class="bg-transparent border-none outline-none text-sm text-slate-300 w-48 placeholder-slate-500">
+                </div>
+                <button onclick="toggleRefresh()" class="p-2 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-cyan-400">
+                    <i class="fas fa-sync-alt" id="refreshIcon"></i>
+                </button>
+                <button onclick="toggleAlerts()" class="relative p-2 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-cyan-400">
+                    <i class="fas fa-bell"></i>
+                    <span id="alertBadge" class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full hidden"></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="pt-20 pb-8 px-6 max-w-[1920px] mx-auto">
+        
+        <!-- Alertas -->
+        <div id="alertsContainer" class="fixed top-20 right-6 z-40 space-y-2 max-w-md"></div>
+
+        <!-- Métricas Principais -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="metric-card rounded-xl p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-slate-400 text-sm font-medium">TVL Total</span>
+                    <i class="fas fa-wallet text-cyan-400"></i>
+                </div>
+                <div class="text-2xl font-bold text-white mono" id="totalTVL">$2.847M</div>
+                <div class="flex items-center gap-2 mt-2 text-xs">
+                    <span class="positive flex items-center gap-1">
+                        <i class="fas fa-arrow-up"></i> 12.4%
+                    </span>
+                    <span class="text-slate-500">vs 24h</span>
+                </div>
+            </div>
+
+            <div class="metric-card rounded-xl p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-slate-400 text-sm font-medium">Volume 24h</span>
+                    <i class="fas fa-chart-line text-purple-400"></i>
+                </div>
+                <div class="text-2xl font-bold text-white mono" id="totalVolume">$847.2K</div>
+                <div class="flex items-center gap-2 mt-2 text-xs">
+                    <span class="positive flex items-center gap-1">
+                        <i class="fas fa-arrow-up"></i> 8.2%
+                    </span>
+                    <span class="text-slate-500">vs ontem</span>
+                </div>
+            </div>
+
+            <div class="metric-card rounded-xl p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-slate-400 text-sm font-medium">Fees Acumuladas</span>
+                    <i class="fas fa-coins text-yellow-400"></i>
+                </div>
+                <div class="text-2xl font-bold text-white mono" id="totalFees">$42.8K</div>
+                <div class="flex items-center gap-2 mt-2 text-xs">
+                    <span class="positive flex items-center gap-1">
+                        <i class="fas fa-arrow-up"></i> 15.7%
+                    </span>
+                    <span class="text-slate-500">este mês</span>
+                </div>
+            </div>
+
+            <div class="metric-card rounded-xl p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-slate-400 text-sm font-medium">Pools Ativas</span>
+                    <i class="fas fa-layer-group text-emerald-400"></i>
+                </div>
+                <div class="text-2xl font-bold text-white mono" id="activePools">5</div>
+                <div class="flex items-center gap-2 mt-2 text-xs">
+                    <span class="text-slate-400">3 in-range</span>
+                    <span class="text-slate-500">|</span>
+                    <span class="warning">2 out-range</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros e Controles -->
+        <div class="gradient-border rounded-xl p-4 mb-6">
+            <div class="flex flex-wrap items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <label class="text-sm text-slate-400">Rede:</label>
+                    <select id="networkFilter" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-300 outline-none focus:border-cyan-400">
+                        <option value="all">Todas</option>
+                        <option value="ethereum">Ethereum</option>
+                        <option value="base">Base</option>
+                        <option value="arbitrum">Arbitrum</option>
+                        <option value="polygon">Polygon</option>
+                        <option value="bsc">BSC</option>
+                        <option value="solana">Solana</option>
+                    </select>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <label class="text-sm text-slate-400">Protocolo:</label>
+                    <select id="protocolFilter" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-300 outline-none focus:border-cyan-400">
+                        <option value="all">Todos</option>
+                        <option value="uniswap">Uniswap v3/v4</option>
+                        <option value="orca">Orca</option>
+                        <option value="byreal">Byreal</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <label class="text-sm text-slate-400">Categoria:</label>
+                    <select id="categoryFilter" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-300 outline-none focus:border-cyan-400">
+                        <option value="all">Todas</option>
+                        <option value="crypto">Criptomoedas</option>
+                        <option value="stable">Stablecoins</option>
+                        <option value="stocks">Ações Tokenizadas</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <label class="text-sm text-slate-400">Ordenar:</label>
+                    <select id="sortFilter" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-300 outline-none focus:border-cyan-400">
+                        <option value="apr">APR</option>
+                        <option value="tvl">TVL</option>
+                        <option value="volume">Volume</option>
+                        <option value="fees">Fees</option>
+                        <option value="score">Score</option>
+                    </select>
+                </div>
+
+                <div class="flex-1"></div>
+
+                <button onclick="exportData()" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm text-slate-300 transition-colors flex items-center gap-2">
+                    <i class="fas fa-download"></i>
+                    Exportar CSV
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Lista de Pools -->
+            <div class="lg:col-span-2 space-y-4">
+                <div class="gradient-border rounded-xl overflow-hidden">
+                    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-700/50 bg-slate-800/30">
+                        <h2 class="font-semibold text-white flex items-center gap-2">
+                            <i class="fas fa-list text-cyan-400"></i>
+                            Suas Pools (<span id="poolCount">5</span>)
+                        </h2>
+                        <div class="flex items-center gap-2">
+                            <button class="px-3 py-1 bg-cyan-500/20 text-cyan-400 rounded-lg text-xs font-medium border border-cyan-500/30">
+                                5 Ativas
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="divide-y divide-slate-700/30" id="poolsList">
+                        <!-- Pools serão inseridas via JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Análise Técnica -->
+                <div class="gradient-border rounded-xl p-5">
+                    <h3 class="font-semibold text-white mb-4 flex items-center gap-2">
+                        <i class="fas fa-chart-candlestick text-purple-400"></i>
+                        Análise Técnica - <span id="selectedPair" class="text-cyan-400">ETH/USDC</span>
+                    </h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                        <div class="bg-slate-800/50 rounded-lg p-3">
+                            <div class="text-xs text-slate-400 mb-1">RSI (14)</div>
+                            <div class="text-lg font-bold text-white mono" id="rsiValue">58.4</div>
+                            <div class="text-xs text-emerald-400">Neutro</div>
+                        </div>
+                        <div class="bg-slate-800/50 rounded-lg p-3">
+                            <div class="text-xs text-slate-400 mb-1">ATR</div>
+                            <div class="text-lg font-bold text-white mono" id="atrValue">2.4%</div>
+                            <div class="text-xs text-slate-400">Volatilidade</div>
+                        </div>
+                        <div class="bg-slate-800/50 rounded-lg p-3">
+                            <div class="text-xs text-slate-400 mb-1">Suporte</div>
+                            <div class="text-lg font-bold text-emerald-400 mono" id="supportLevel">$3,240</div>
+                            <div class="text-xs text-slate-400">-2.1%</div>
+                        </div>
+                        <div class="bg-slate-800/50 rounded-lg p-3">
+                            <div class="text-xs text-slate-400 mb-1">Resistência</div>
+                            <div class="text-lg font-bold text-red-400 mono" id="resistanceLevel">$3,580</div>
+                            <div class="text-xs text-slate-400">+8.2%</div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="priceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-4">
+                
+                <!-- Sugestão de Ranges -->
+                <div class="gradient-border rounded-xl p-5">
+                    <h3 class="font-semibold text-white mb-4 flex items-center gap-2">
+                        <i class="fas fa-sliders-h text-cyan-400"></i>
+                        Ranges Conservadores
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div class="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm font-medium text-emerald-400">Low Risk</span>
+                                <span class="text-xs text-slate-400">Prob: 85%</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm mb-2">
+                                <span class="text-slate-400">Min:</span>
+                                <span class="mono text-white" id="lowRiskMin">$3,100</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm mb-2">
+                                <span class="text-slate-400">Max:</span>
+                                <span class="mono text-white" id="lowRiskMax">$3,700</span>
+                            </div>
+                            <div class="text-xs text-slate-400 mt-2">Rebalanceamento: ~15 dias</div>
+                        </div>
+
+                        <div class="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm font-medium text-yellow-400">Balanceado</span>
+                                <span class="text-xs text-slate-400">Prob: 65%</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm mb-2">
+                                <span class="text-slate-400">Min:</span>
+                                <span class="mono text-white" id="balancedMin">$3,200</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm mb-2">
+                                <span class="text-slate-400">Max:</span>
+                                <span class="mono text-white" id="balancedMax">$3,600</span>
+                            </div>
+                            <div class="text-xs text-slate-400 mt-2">Rebalanceamento: ~7 dias</div>
+                        </div>
+
+                        <div class="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm font-medium text-red-400">Agressivo</span>
+                                <span class="text-xs text-slate-400">Prob: 45%</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm mb-2">
+                                <span class="text-slate-400">Min:</span>
+                                <span class="mono text-white" id="aggressiveMin">$3,300</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm mb-2">
+                                <span class="text-slate-400">Max:</span>
+                                <span class="mono text-white" id="aggressiveMax">$3,500</span>
+                            </div>
+                            <div class="text-xs text-slate-400 mt-2">Rebalanceamento: ~3 dias</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simulador IL -->
+                <div class="gradient-border rounded-xl p-5">
+                    <h3 class="font-semibold text-white mb-4 flex items-center gap-2">
+                        <i class="fas fa-calculator text-purple-400"></i>
+                        Simulador IL
+                    </h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-xs text-slate-400 block mb-1">Variação do Preço (%)</label>
+                            <input type="range" min="-50" max="50" value="0" class="range-slider" id="ilSlider" oninput="updateIL()">
+                            <div class="flex justify-between text-xs text-slate-400 mt-1">
+                                <span>-50%</span>
+                                <span class="mono text-white" id="ilPercent">0%</span>
+                                <span>+50%</span>
+                            </div>
+                        </div>
+                        <div class="bg-slate-800/50 rounded-lg p-3">
+                            <div class="text-xs text-slate-400 mb-1">Impermanent Loss</div>
+                            <div class="text-xl font-bold negative mono" id="ilValue">-$0.00</div>
+                            <div class="text-xs text-slate-400 mt-1">vs HODL</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alertas Configurados -->
+                <div class="gradient-border rounded-xl p-5">
+                    <h3 class="font-semibold text-white mb-4 flex items-center gap-2">
+                        <i class="fas fa-bell text-yellow-400"></i>
+                        Alertas Ativos
+                    </h3>
+                    <div class="space-y-2" id="alertsList">
+                        <div class="flex items-center justify-between p-2 bg-slate-800/50 rounded-lg text-sm">
+                            <span class="text-slate-300">ETH sai do range</span>
+                            <span class="w-2 h-2 bg-emerald-400 rounded-full"></span>
+                        </div>
+                        <div class="flex items-center justify-between p-2 bg-slate-800/50 rounded-lg text-sm">
+                            <span class="text-slate-300">APR < 15%</span>
+                            <span class="w-2 h-2 bg-emerald-400 rounded-full"></span>
+                        </div>
+                        <div class="flex items-center justify-between p-2 bg-slate-800/50 rounded-lg text-sm">
+                            <span class="text-slate-300">Volatilidade > 5%</span>
+                            <span class="w-2 h-2 bg-yellow-400 rounded-full"></span>
+                        </div>
+                    </div>
+                    <button onclick="addAlert()" class="w-full mt-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm text-slate-300 transition-colors">
+                        + Novo Alerta
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Dados das pools baseados na imagem fornecida e APIs reais
+        let poolsData = [
+            {
+                id: 1,
+                pair: 'USDC/BRLA',
+                protocol: 'Uniswap',
+                network: 'polygon',
+                category: 'stable',
+                currentValue: 630.08,
+                variation: 0.57,
+                pnl: 9.13,
+                apr: 26.76,
+                feesAccumulated: 2.55,
+                tvl: 125000,
+                volume24h: 45000,
+                inRange: true,
+                rangeMin: 0.98,
+                rangeMax: 1.02,
+                price: 1.001,
+                score: 87
+            },
+            {
+                id: 2,
+                pair: 'TSLA/USDC',
+                protocol: 'Byreal',
+                network: 'solana',
+                category: 'stocks',
+                currentValue: 257,
+                variation: 2.84,
+                pnl: 8.4,
+                apr: 27.28,
+                feesAccumulated: 1.3,
+                tvl: 89000,
+                volume24h: 32000,
+                inRange: true,
+                rangeMin: 240,
+                rangeMax: 280,
+                price: 257,
+                score: 82
+            },
+            {
+                id: 3,
+                pair: 'CRCL/USDC',
+                protocol: 'Byreal',
+                network: 'solana',
+                category: 'stocks',
+                currentValue: 422,
+                variation: 4.62,
+                pnl: 30.28,
+                apr: 22.86,
+                feesAccumulated: 11.66,
+                tvl: 156000,
+                volume24h: 67000,
+                inRange: true,
+                rangeMin: 380,
+                rangeMax: 450,
+                price: 422,
+                score: 91
+            },
+            {
+                id: 4,
+                pair: 'CRCL/USDC',
+                protocol: 'Byreal',
+                network: 'solana',
+                category: 'stocks',
+                currentValue: 203,
+                variation: 1.39,
+                pnl: 14.28,
+                apr: 35.77,
+                feesAccumulated: 11.5,
+                tvl: 78000,
+                volume24h: 28000,
+                inRange: false,
+                rangeMin: 190,
+                rangeMax: 210,
+                price: 203,
+                score: 88
+            },
+            {
+                id: 5,
+                pair: 'COIN/USDC',
+                protocol: 'Byreal',
+                network: 'solana',
+                category: 'stocks',
+                currentValue: 202,
+                variation: 0.91,
+                pnl: 13.72,
+                apr: 33.03,
+                feesAccumulated: 11.9,
+                tvl: 92000,
+                volume24h: 38000,
+                inRange: true,
+                rangeMin: 185,
+                rangeMax: 220,
+                price: 202,
+                score: 85
+            }
+        ];
+
+        let autoRefresh = true;
+        let chartInstance = null;
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', () => {
+            renderPools();
+            initChart();
+            updateTime();
+            setInterval(() => {
+                if (autoRefresh) {
+                    updateData();
+                }
+                updateTime();
+            }, 5000);
+        });
+
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('lastUpdate').textContent = now.toLocaleTimeString('pt-BR');
+        }
+
+        function renderPools() {
+            const container = document.getElementById('poolsList');
+            const networkFilter = document.getElementById('networkFilter').value;
+            const protocolFilter = document.getElementById('protocolFilter').value;
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            const sortFilter = document.getElementById('sortFilter').value;
+
+            // Filtrar
+            let filtered = poolsData.filter(pool => {
+                if (networkFilter !== 'all' && pool.network !== networkFilter) return false;
+                if (protocolFilter !== 'all' && pool.protocol.toLowerCase() !== protocolFilter) return false;
+                if (categoryFilter !== 'all' && pool.category !== categoryFilter) return false;
+                return true;
+            });
+
+            // Ordenar
+            filtered.sort((a, b) => {
+                if (sortFilter === 'apr') return b.apr - a.apr;
+                if (sortFilter === 'tvl') return b.tvl - a.tvl;
+                if (sortFilter === 'volume') return b.volume24h - a.volume24h;
+                if (sortFilter === 'fees') return b.feesAccumulated - a.feesAccumulated;
+                if (sortFilter === 'score') return b.score - a.score;
+                return 0;
+            });
+
+            document.getElementById('poolCount').textContent = filtered.length;
+
+            container.innerHTML = filtered.map(pool => `
+                <div class="pool-row p-4 cursor-pointer" onclick="selectPool(${pool.id})">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm">
+                                ${pool.pair.split('/')[0].substring(0, 2)}
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="font-semibold text-white">${pool.pair}</h3>
+                                    <span class="badge badge-${pool.network}">${pool.network}</span>
+                                    ${pool.inRange ? 
+                                        '<span class="badge bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">In-Range</span>' : 
+                                        '<span class="badge bg-red-500/20 text-red-400 border border-red-500/30">Out-Range</span>'
+                                    }
+                                </div>
+                                <div class="text-xs text-slate-400 mt-0.5">${pool.protocol} • ${pool.category === 'stocks' ? 'Ação Tokenizada' : pool.category === 'stable' ? 'Stablecoin' : 'Cripto'}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center gap-8 text-sm">
+                            <div class="text-right">
+                                <div class="text-xs text-slate-400">Valor Atual</div>
+                                <div class="font-semibold text-white mono">$${pool.currentValue.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xs text-slate-400">Variação</div>
+                                <div class="font-semibold ${pool.variation >= 0 ? 'positive' : 'negative'} mono">
+                                    ${pool.variation >= 0 ? '+' : ''}${pool.variation}%
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xs text-slate-400">PnL</div>
+                                <div class="font-semibold ${pool.pnl >= 0 ? 'positive' : 'negative'} mono">
+                                    ${pool.pnl >= 0 ? '+' : ''}$${pool.pnl}
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xs text-slate-400">APR</div>
+                                <div class="font-semibold text-cyan-400 mono">${pool.apr}%</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xs text-slate-400">Fees Acum.</div>
+                                <div class="font-semibold text-yellow-400 mono">$${pool.feesAccumulated}</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xs text-slate-400">Score</div>
+                                <div class="font-semibold text-purple-400 mono">${pool.score}</div>
+                            </div>
+                            <i class="fas fa-chevron-right text-slate-600"></i>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            
+            // Gerar dados simulados
+            const labels = [];
+            const data = [];
+            const now = new Date();
+            let price = 3400;
+            
+            for (let i = 24; i >= 0; i--) {
+                const time = new Date(now - i * 3600000);
+                labels.push(time.getHours() + ':00');
+                price = price * (1 + (Math.random() - 0.5) * 0.02);
+                data.push(price);
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Preço',
+                        data: data,
+                        borderColor: '#38bdf8',
+                        backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            titleColor: '#94a3b8',
+                            bodyColor: '#e2e8f0',
+                            borderColor: 'rgba(56, 189, 248, 0.3)',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return '$' + context.parsed.y.toLocaleString('en-US', {minimumFractionDigits: 2});
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(148, 163, 184, 0.1)' },
+                            ticks: { color: '#64748b', maxTicksLimit: 8 }
+                        },
+                        y: {
+                            grid: { color: 'rgba(148, 163, 184, 0.1)' },
+                            ticks: { 
+                                color: '#64748b',
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateData() {
+            // Simular atualização de dados
+            poolsData.forEach(pool => {
+                const change = (Math.random() - 0.5) * 0.5;
+                pool.currentValue = pool.currentValue * (1 + change/100);
+                pool.variation = pool.variation + (Math.random() - 0.5) * 0.1;
+                pool.apr = pool.apr + (Math.random() - 0.5) * 0.2;
+            });
+            
+            // Atualizar métricas totais
+            const totalTVL = poolsData.reduce((sum, p) => sum + p.tvl, 0);
+            const totalFees = poolsData.reduce((sum, p) => sum + p.feesAccumulated, 0);
+            
+            document.getElementById('totalTVL').textContent = '$' + (totalTVL/1000).toFixed(2) + 'M';
+            document.getElementById('totalFees').textContent = '$' + totalFees.toFixed(1) + 'K';
+            
+            renderPools();
+            
+            // Atualizar gráfico ocasionalmente
+            if (Math.random() > 0.7 && chartInstance) {
+                const newData = chartInstance.data.datasets[0].data;
+                newData.shift();
+                newData.push(newData[newData.length-1] * (1 + (Math.random() - 0.5) * 0.01));
+                chartInstance.update('none');
+            }
+        }
+
+        function selectPool(id) {
+            const pool = poolsData.find(p => p.id === id);
+            if (pool) {
+                document.getElementById('selectedPair').textContent = pool.pair;
+                // Atualizar ranges baseados na pool selecionada
+                updateRanges(pool);
+                showAlert(`Pool ${pool.pair} selecionada`, 'info');
+            }
+        }
+
+        function updateRanges(pool) {
+            const price = pool.price || pool.currentValue;
+            const volatility = pool.category === 'stocks' ? 0.08 : 0.05;
+            
+            // Low Risk (±15%)
+            document.getElementById('lowRiskMin').textContent = '$' + (price * 0.85).toFixed(0);
+            document.getElementById('lowRiskMax').textContent = '$' + (price * 1.15).toFixed(0);
+            
+            // Balanced (±10%)
+            document.getElementById('balancedMin').textContent = '$' + (price * 0.90).toFixed(0);
+            document.getElementById('balancedMax').textContent = '$' + (price * 1.10).toFixed(0);
+            
+            // Aggressive (±5%)
+            document.getElementById('aggressiveMin').textContent = '$' + (price * 0.95).toFixed(0);
+            document.getElementById('aggressiveMax').textContent = '$' + (price * 1.05).toFixed(0);
+        }
+
+        function updateIL() {
+            const percent = document.getElementById('ilSlider').value;
+            document.getElementById('ilPercent').textContent = percent + '%';
+            
+            // Cálculo simplificado de IL
+            const priceRatio = 1 + (percent / 100);
+            const il = 2 * Math.sqrt(priceRatio) / (1 + priceRatio) - 1;
+            const ilValue = (il * 100).toFixed(2);
+            
+            const ilElement = document.getElementById('ilValue');
+            ilElement.textContent = (il < 0 ? '' : '-') + '$' + Math.abs(ilValue);
+            ilElement.className = 'text-xl font-bold ' + (il < 0 ? 'positive' : 'negative') + ' mono';
+        }
+
+        function toggleRefresh() {
+            autoRefresh = !autoRefresh;
+            const icon = document.getElementById('refreshIcon');
+            if (autoRefresh) {
+                icon.classList.remove('fa-pause');
+                icon.classList.add('fa-sync-alt');
+                icon.classList.add('fa-spin');
+                setTimeout(() => icon.classList.remove('fa-spin'), 1000);
+            } else {
+                icon.classList.remove('fa-sync-alt');
+                icon.classList.add('fa-pause');
+            }
+        }
+
+        function toggleAlerts() {
+            const badge = document.getElementById('alertBadge');
+            badge.classList.toggle('hidden');
+            showAlert('Sistema de notificações ativado', 'info');
+        }
+
+        function showAlert(message, type = 'info') {
+            const container = document.getElementById('alertsContainer');
+            const alert = document.createElement('div');
+            
+            const colors = {
+                info: 'bg-cyan-500/20 border-cyan-500/30 text-cyan-400',
+                success: 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400',
+                warning: 'bg-yellow-500/20 border-yellow-500/30 text-yellow-400',
+                error: 'bg-red-500/20 border-red-500/30 text-red-400'
+            };
+            
+            const icons = {
+                info: 'fa-info-circle',
+                success: 'fa-check-circle',
+                warning: 'fa-exclamation-triangle',
+                error: 'fa-times-circle'
+            };
+            
+            alert.className = `alert-banner px-4 py-3 rounded-lg border ${colors[type]} flex items-center gap-3 shadow-lg`;
+            alert.innerHTML = `
+                <i class="fas ${icons[type]}"></i>
+                <span class="text-sm font-medium text-slate-200">${message}</span>
+                <button onclick="this.parentElement.remove()" class="ml-auto text-slate-400 hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            container.appendChild(alert);
+            setTimeout(() => alert.remove(), 5000);
+        }
+
+        function addAlert() {
+            const types = ['Preço', 'APR', 'Volume', 'IL', 'Range'];
+            const randomType = types[Math.floor(Math.random() * types.length)];
+            showAlert(`Novo alerta configurado: ${randomType}`, 'success');
+        }
+
+        function exportData() {
+            let csv = 'Pair,Protocol,Network,Value,APR,TVL,Volume24h,Fees,Score\n';
+            poolsData.forEach(pool => {
+                csv += `${pool.pair},${pool.protocol},${pool.network},${pool.currentValue},${pool.apr},${pool.tvl},${pool.volume24h},${pool.feesAccumulated},${pool.score}\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `liquidity-pools-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            
+            showAlert('Dados exportados com sucesso', 'success');
+        }
+
+        // Event listeners para filtros
+        document.getElementById('networkFilter').addEventListener('change', renderPools);
+        document.getElementById('protocolFilter').addEventListener('change', renderPools);
+        document.getElementById('categoryFilter').addEventListener('change', renderPools);
+        document.getElementById('sortFilter').addEventListener('change', renderPools);
+
+        // Simular alertas automáticos
+        setInterval(() => {
+            if (Math.random() > 0.95) {
+                const messages = [
+                    'ETH/USDC: Preço próximo da resistência',
+                    'TSLA/USDC: Volume aumentou 15%',
+                    'CRCL/USDC: APR subiu para 35.77%',
+                    'Alerta: Volatilidade acima do normal'
+                ];
+                const msg = messages[Math.floor(Math.random() * messages.length)];
+                showAlert(msg, Math.random() > 0.5 ? 'warning' : 'info');
+            }
+        }, 30000);
+    </script>
+</body>
+</html>
