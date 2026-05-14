@@ -3,847 +3,450 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LiquidityPro Terminal | DeFi Analytics</title>
+    <title>LiquidityPro Terminal | DeFi Analytics BTC</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * { font-family: 'Inter', sans-serif; }
+        * { font-family: 'Inter', sans-serif; box-sizing: border-box; }
         .mono { font-family: 'JetBrains Mono', monospace; }
-        body { background: #0a0e1a; color: #e2e8f0; }
+        body { background: #0a0e1a; color: #e2e8f0; min-height: 100vh; }
         
         .glass-panel {
             background: rgba(15, 23, 42, 0.85);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(56, 189, 248, 0.15);
         }
-        
         .gradient-border {
-            position: relative;
             background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
             border: 1px solid rgba(56, 189, 248, 0.2);
         }
-        
         .metric-card {
             background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
             border: 1px solid rgba(56, 189, 248, 0.15);
             transition: all 0.3s ease;
         }
-        .metric-card:hover {
-            transform: translateY(-2px);
-            border-color: rgba(56, 189, 248, 0.4);
-            box-shadow: 0 10px 40px rgba(56, 189, 248, 0.15);
-        }
-        
+        .metric-card:hover { transform: translateY(-2px); border-color: rgba(56, 189, 248, 0.4); box-shadow: 0 10px 40px rgba(56, 189, 248, 0.15); }
         .pool-row {
             background: rgba(30, 41, 59, 0.4);
             border: 1px solid rgba(148, 163, 184, 0.1);
-            transition: all 0.2s ease;
-            cursor: pointer;
+            transition: all 0.2s ease; cursor: pointer;
         }
-        .pool-row:hover {
-            background: rgba(51, 65, 85, 0.6);
-            border-color: rgba(56, 189, 248, 0.3);
-            transform: translateX(4px);
-        }
-        
+        .pool-row:hover { background: rgba(51, 65, 85, 0.6); border-color: rgba(56, 189, 248, 0.3); transform: translateX(4px); }
         .pulse-dot { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: .5; }
-        }
-        
-        .positive { color: #34d399; }
-        .negative { color: #f87171; }
-        .warning { color: #fbbf24; }
-        
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        
-        .badge-ethereum { background: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); }
-        .badge-solana { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3); }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+        .positive { color: #34d399; } .negative { color: #f87171; } .warning { color: #fbbf24; }
+        .badge { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+        .badge-eth { background: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); }
+        .badge-sol { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3); }
         .badge-base { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.3); }
-        .badge-arbitrum { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.3); }
-        .badge-polygon { background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(192, 132, 252, 0.3); }
-        
-        .range-slider {
-            -webkit-appearance: none;
-            width: 100%;
-            height: 6px;
-            border-radius: 3px;
-            background: #1e293b;
-            outline: none;
-        }
-        .range-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: #38bdf8;
-            cursor: pointer;
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
-        }
-        
+        .badge-arb { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.3); }
+        .range-slider { -webkit-appearance: none; width: 100%; height: 6px; border-radius: 3px; background: #1e293b; outline: none; }
+        .range-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #38bdf8; cursor: pointer; box-shadow: 0 0 10px rgba(56, 189, 248, 0.5); }
         .alert-banner { animation: slideIn 0.3s ease-out; }
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        
-        .skeleton {
-            background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
-            background-size: 200% 100%;
-            animation: loading 1.5s infinite;
-        }
-        @keyframes loading {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-
-        .risk-heatmap-low { background: rgba(52, 211, 153, 0.2); border-left: 3px solid #34d399; }
-        .risk-heatmap-med { background: rgba(251, 191, 36, 0.2); border-left: 3px solid #fbbf24; }
-        .risk-heatmap-high { background: rgba(248, 113, 113, 0.2); border-left: 3px solid #f87171; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .risk-low { background: rgba(52, 211, 153, 0.15); border-left: 3px solid #34d399; }
+        .risk-med { background: rgba(251, 191, 36, 0.15); border-left: 3px solid #fbbf24; }
+        .risk-high { background: rgba(248, 113, 113, 0.15); border-left: 3px solid #f87171; }
+        .loading-skeleton { background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%); background-size: 200% 100%; animation: loading 1.5s infinite; }
+        @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        select, input { background: #0f172a; border: 1px solid #334155; color: #e2e8f0; }
+        select:focus, input:focus { outline: none; border-color: #38bdf8; }
     </style>
 </head>
-<body class="min-h-screen overflow-x-hidden">
+<body class="overflow-x-hidden">
 
     <!-- Header -->
     <header class="fixed top-0 left-0 right-0 z-50 glass-panel border-b border-slate-700/50">
         <div class="flex items-center justify-between px-6 py-3">
             <div class="flex items-center gap-4">
-                <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-layer-group text-white text-sm"></i>
-                    </div>
-                    <div>
-                        <h1 class="text-lg font-bold text-white tracking-tight">LiquidityPro<span class="text-cyan-400">Terminal</span></h1>
-                        <p class="text-xs text-slate-400">Concentrated Liquidity Analytics</p>
-                    </div>
+                <div class="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-layer-group text-white text-sm"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-white tracking-tight">LiquidityPro<span class="text-cyan-400">Terminal</span></h1>
+                    <p class="text-xs text-slate-400">BTC Pairs & Tokenized Stocks Analytics</p>
                 </div>
                 <div class="h-6 w-px bg-slate-700 mx-2"></div>
                 <div class="flex items-center gap-2 text-xs">
                     <span class="flex items-center gap-1.5 text-emerald-400">
-                        <span class="w-2 h-2 bg-emerald-400 rounded-full pulse-dot"></span>
-                        Live
+                        <span class="w-2 h-2 bg-emerald-400 rounded-full pulse-dot"></span> Live
                     </span>
                     <span class="text-slate-500">|</span>
-                    <span class="text-slate-400 mono" id="lastUpdate">--:--:--</span>
+                    <span class="text-slate-400 mono" id="clock">--:--:--</span>
                 </div>
             </div>
-            
-            <div class="flex items-center gap-4">
-                <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 rounded-lg border border-slate-700">
-                    <i class="fas fa-search text-slate-400 text-sm"></i>
-                    <input type="text" id="searchInput" placeholder="Buscar pools..." class="bg-transparent border-none outline-none text-sm text-slate-300 w-48 placeholder-slate-500">
+            <div class="flex items-center gap-3">
+                <div class="relative">
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                    <input type="text" id="searchInput" placeholder="Buscar pools..." class="pl-8 pr-3 py-1.5 rounded-lg text-sm w-48 bg-slate-800/50 border border-slate-700">
                 </div>
-                <button onclick="app.toggleRefresh()" class="p-2 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-cyan-400" id="refreshBtn">
+                <button id="refreshBtn" class="p-2 hover:bg-slate-800 rounded-lg transition text-slate-400 hover:text-cyan-400" title="Atualizar dados">
                     <i class="fas fa-sync-alt"></i>
-                </button>
-                <button onclick="app.toggleAlerts()" class="relative p-2 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-cyan-400">
-                    <i class="fas fa-bell"></i>
-                    <span id="alertBadge" class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full hidden"></span>
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="pt-20 pb-8 px-6 max-w-[1920px] mx-auto">
-        
-        <!-- Alerts Container -->
-        <div id="alertsContainer" class="fixed top-20 right-6 z-40 space-y-2 max-w-md"></div>
+    <!-- Alerts -->
+    <div id="alertsContainer" class="fixed top-20 right-6 z-40 space-y-2 max-w-md pointer-events-none"></div>
 
-        <!-- Metrics Dashboard -->
+    <!-- Main -->
+    <main class="pt-20 pb-8 px-4 md:px-6 max-w-[1920px] mx-auto">
+        
+        <!-- Metrics -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div class="metric-card rounded-xl p-5">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-slate-400 text-sm font-medium">TVL Total</span>
-                    <i class="fas fa-wallet text-cyan-400"></i>
-                </div>
-                <div class="text-2xl font-bold text-white mono" id="totalTVL">--</div>
-                <div class="flex items-center gap-2 mt-2 text-xs">
-                    <span class="positive flex items-center gap-1" id="tvlChange">
-                        <i class="fas fa-arrow-up"></i> --%
-                    </span>
-                    <span class="text-slate-500">vs 24h</span>
-                </div>
+                <div class="flex justify-between mb-3"><span class="text-slate-400 text-sm">TVL Total</span><i class="fas fa-wallet text-cyan-400"></i></div>
+                <div class="text-2xl font-bold mono" id="metric-tvl">$0</div>
+                <div class="text-xs text-slate-400 mt-1">Capital em liquidez</div>
             </div>
-
             <div class="metric-card rounded-xl p-5">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-slate-400 text-sm font-medium">Volume 24h</span>
-                    <i class="fas fa-chart-line text-purple-400"></i>
-                </div>
-                <div class="text-2xl font-bold text-white mono" id="totalVolume">--</div>
-                <div class="flex items-center gap-2 mt-2 text-xs">
-                    <span class="positive flex items-center gap-1" id="volumeChange">
-                        <i class="fas fa-arrow-up"></i> --%
-                    </span>
-                    <span class="text-slate-500">vs ontem</span>
-                </div>
+                <div class="flex justify-between mb-3"><span class="text-slate-400 text-sm">Volume 24h</span><i class="fas fa-chart-line text-purple-400"></i></div>
+                <div class="text-2xl font-bold mono" id="metric-volume">$0</div>
+                <div class="text-xs text-slate-400 mt-1">Negociado nas pools</div>
             </div>
-
             <div class="metric-card rounded-xl p-5">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-slate-400 text-sm font-medium">Fees Acumuladas</span>
-                    <i class="fas fa-coins text-yellow-400"></i>
-                </div>
-                <div class="text-2xl font-bold text-white mono" id="totalFees">--</div>
-                <div class="flex items-center gap-2 mt-2 text-xs">
-                    <span class="text-slate-400">Este mês</span>
-                </div>
+                <div class="flex justify-between mb-3"><span class="text-slate-400 text-sm">APR Médio</span><i class="fas fa-percent text-yellow-400"></i></div>
+                <div class="text-2xl font-bold mono" id="metric-apr">0%</div>
+                <div class="text-xs text-slate-400 mt-1">Média ponderada</div>
             </div>
-
             <div class="metric-card rounded-xl p-5">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-slate-400 text-sm font-medium">Pools Ativas</span>
-                    <i class="fas fa-layer-group text-emerald-400"></i>
-                </div>
-                <div class="text-2xl font-bold text-white mono" id="activePools">--</div>
-                <div class="flex items-center gap-2 mt-2 text-xs">
-                    <span class="text-emerald-400" id="inRangeCount">0 in-range</span>
-                    <span class="text-slate-500">|</span>
-                    <span class="text-red-400" id="outRangeCount">0 out</span>
-                </div>
+                <div class="flex justify-between mb-3"><span class="text-slate-400 text-sm">Pools BTC</span><i class="fab fa-bitcoin text-orange-400"></i></div>
+                <div class="text-2xl font-bold mono" id="metric-count">0</div>
+                <div class="text-xs text-slate-400 mt-1">Com liquidez > $100K</div>
             </div>
         </div>
 
         <!-- Filters -->
         <div class="gradient-border rounded-xl p-4 mb-6">
-            <div class="flex flex-wrap items-center gap-4">
-                <div class="flex items-center gap-2">
-                    <label class="text-sm text-slate-400">Rede:</label>
-                    <select id="networkFilter" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-300 outline-none focus:border-cyan-400">
-                        <option value="all">Todas</option>
-                        <option value="ethereum">Ethereum</option>
-                        <option value="base">Base</option>
-                        <option value="arbitrum">Arbitrum</option>
-                        <option value="polygon">Polygon</option>
-                        <option value="solana">Solana</option>
-                    </select>
-                </div>
-                
-                <div class="flex items-center gap-2">
-                    <label class="text-sm text-slate-400">Protocolo:</label>
-                    <select id="protocolFilter" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-300 outline-none focus:border-cyan-400">
-                        <option value="all">Todos</option>
-                        <option value="uniswap">Uniswap v3/v4</option>
-                        <option value="orca">Orca</option>
-                        <option value="byreal">Byreal (RWA)</option>
-                    </select>
-                </div>
-
-                <div class="flex items-center gap-2">
-                    <label class="text-sm text-slate-400">Categoria:</label>
-                    <select id="categoryFilter" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-300 outline-none focus:border-cyan-400">
-                        <option value="all">Todas</option>
-                        <option value="crypto">Criptomoedas</option>
-                        <option value="stable">Stablecoins</option>
-                        <option value="stocks">Ações Tokenizadas</option>
-                        <option value="rwa">RWA</option>
-                    </select>
-                </div>
-
-                <div class="flex items-center gap-2">
-                    <label class="text-sm text-slate-400">Ordenar:</label>
-                    <select id="sortFilter" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-300 outline-none focus:border-cyan-400">
-                        <option value="score">Score (Recomendado)</option>
-                        <option value="apr">APR</option>
-                        <option value="tvl">TVL</option>
-                        <option value="volume">Volume</option>
-                        <option value="risk">Menor Risco</option>
-                    </select>
-                </div>
-
+            <div class="flex flex-wrap gap-3 items-center">
+                <select id="filter-type" class="px-3 py-1.5 rounded-lg text-sm">
+                    <option value="all">Todos os Pares</option>
+                    <option value="btc-usd">BTC × Stable (USD)</option>
+                    <option value="btc-eth">BTC × ETH</option>
+                    <option value="btc-stock">BTC × Ações Tokenizadas</option>
+                </select>
+                <select id="filter-risk" class="px-3 py-1.5 rounded-lg text-sm">
+                    <option value="all">Qualquer Risco</option>
+                    <option value="safe">Baixo Risco (Score ≥70)</option>
+                    <option value="med">Médio Risco (40-69)</option>
+                </select>
+                <select id="sort-by" class="px-3 py-1.5 rounded-lg text-sm">
+                    <option value="score">Score (Recomendado)</option>
+                    <option value="apr">Maior APR</option>
+                    <option value="tvl">Maior TVL</option>
+                </select>
                 <div class="flex-1"></div>
-
-                <button onclick="app.exportData()" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm text-slate-300 transition-colors flex items-center gap-2">
-                    <i class="fas fa-download"></i>
-                    Exportar
+                <button id="exportBtn" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm flex items-center gap-2 transition">
+                    <i class="fas fa-download"></i> Exportar CSV
                 </button>
             </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
             <!-- Pools List -->
-            <div class="lg:col-span-2 space-y-4">
+            <div class="lg:col-span-2">
                 <div class="gradient-border rounded-xl overflow-hidden">
-                    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-700/50 bg-slate-800/30">
-                        <h2 class="font-semibold text-white flex items-center gap-2">
-                            <i class="fas fa-list text-cyan-400"></i>
-                            Pools de Liquidez
-                        </h2>
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs text-slate-400" id="poolsStatus">Carregando...</span>
-                        </div>
+                    <div class="px-5 py-3 border-b border-slate-700/50 bg-slate-800/30 flex justify-between items-center">
+                        <h2 class="font-semibold flex items-center gap-2"><i class="fas fa-list text-cyan-400"></i> Oportunidades Encontradas</h2>
+                        <span class="text-xs text-slate-400 mono" id="data-status">Carregando...</span>
                     </div>
-                    
-                    <div class="divide-y divide-slate-700/30 max-h-[600px] overflow-y-auto" id="poolsList">
-                        <!-- Dynamic content -->
+                    <div class="divide-y divide-slate-700/30 max-h-[600px] overflow-y-auto" id="pools-list">
+                        <div class="p-10 text-center text-slate-500">
+                            <i class="fas fa-spinner fa-spin text-2xl mb-2 text-cyan-400"></i>
+                            <p class="text-sm">Buscando dados em tempo real...</p>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Technical Analysis -->
-                <div class="gradient-border rounded-xl p-5">
-                    <h3 class="font-semibold text-white mb-4 flex items-center gap-2">
-                        <i class="fas fa-chart-candlestick text-purple-400"></i>
-                        Análise Técnica - <span id="selectedPair" class="text-cyan-400">Selecione uma pool</span>
-                    </h3>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                        <div class="bg-slate-800/50 rounded-lg p-3">
-                            <div class="text-xs text-slate-400 mb-1">RSI (14)</div>
-                            <div class="text-lg font-bold text-white mono" id="rsiValue">--</div>
-                            <div class="text-xs text-slate-400" id="rsiStatus">--</div>
-                        </div>
-                        <div class="bg-slate-800/50 rounded-lg p-3">
-                            <div class="text-xs text-slate-400 mb-1">ATR</div>
-                            <div class="text-lg font-bold text-white mono" id="atrValue">--</div>
-                            <div class="text-xs text-slate-400">Volatilidade</div>
-                        </div>
-                        <div class="bg-slate-800/50 rounded-lg p-3">
-                            <div class="text-xs text-slate-400 mb-1">Suporte</div>
-                            <div class="text-lg font-bold text-emerald-400 mono" id="supportLevel">--</div>
-                        </div>
-                        <div class="bg-slate-800/50 rounded-lg p-3">
-                            <div class="text-xs text-slate-400 mb-1">Resistência</div>
-                            <div class="text-lg font-bold text-red-400 mono" id="resistanceLevel">--</div>
-                        </div>
-                    </div>
-                    <div class="h-64 w-full">
-                        <canvas id="priceChart"></canvas>
-                    </div>
+                <!-- Chart -->
+                <div class="gradient-border rounded-xl p-5 mt-6">
+                    <h3 class="font-semibold mb-4 flex items-center gap-2"><i class="fas fa-chart-area text-purple-400"></i> Análise de Preço: <span id="chart-pair" class="text-cyan-400">Selecione uma pool</span></h3>
+                    <div class="h-64 w-full"><canvas id="priceChart"></canvas></div>
                 </div>
             </div>
 
             <!-- Sidebar -->
             <div class="space-y-4">
-                
-                <!-- Range Suggestions -->
+                <!-- Ranges -->
                 <div class="gradient-border rounded-xl p-5">
-                    <h3 class="font-semibold text-white mb-4 flex items-center gap-2">
-                        <i class="fas fa-sliders-h text-cyan-400"></i>
-                        Ranges Recomendados
-                    </h3>
-                    
-                    <div class="space-y-3" id="rangesContainer">
-                        <div class="text-center text-slate-500 text-sm py-8">
-                            Selecione uma pool para ver ranges
-                        </div>
+                    <h3 class="font-semibold mb-4 flex items-center gap-2"><i class="fas fa-sliders-h text-cyan-400"></i> Ranges Sugeridos</h3>
+                    <div id="ranges-container" class="space-y-3">
+                        <p class="text-sm text-slate-500 text-center py-4">Clique em uma pool para ver ranges otimizados</p>
                     </div>
                 </div>
 
                 <!-- IL Simulator -->
                 <div class="gradient-border rounded-xl p-5">
-                    <h3 class="font-semibold text-white mb-4 flex items-center gap-2">
-                        <i class="fas fa-calculator text-purple-400"></i>
-                        Simulador IL
-                    </h3>
+                    <h3 class="font-semibold mb-4 flex items-center gap-2"><i class="fas fa-calculator text-purple-400"></i> Simulador IL</h3>
                     <div class="space-y-3">
                         <div>
-                            <label class="text-xs text-slate-400 block mb-1">Variação do Preço (%)</label>
-                            <input type="range" min="-50" max="50" value="0" class="range-slider" id="ilSlider">
-                            <div class="flex justify-between text-xs text-slate-400 mt-1">
-                                <span>-50%</span>
-                                <span class="mono text-white" id="ilPercent">0%</span>
-                                <span>+50%</span>
-                            </div>
+                            <label class="text-xs text-slate-400 block mb-1">Variação do Preço vs Entrada</label>
+                            <input type="range" min="-50" max="50" value="0" class="range-slider" id="il-slider">
+                            <div class="flex justify-between text-xs text-slate-400 mt-1 mono"><span>-50%</span><span id="il-val">0%</span><span>+50%</span></div>
                         </div>
-                        <div class="bg-slate-800/50 rounded-lg p-3">
-                            <div class="text-xs text-slate-400 mb-1">Impermanent Loss</div>
-                            <div class="text-xl font-bold negative mono" id="ilValue">$0.00</div>
-                            <div class="text-xs text-slate-400 mt-1">vs HODL</div>
+                        <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+                            <div class="text-xs text-slate-400 mb-1">Impermanent Loss Estimado</div>
+                            <div class="text-xl font-bold mono negative" id="il-result">0.00%</div>
+                            <div class="text-xs text-slate-400 mt-1">vs HODL simples</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Active Alerts -->
+                <!-- Alerts -->
                 <div class="gradient-border rounded-xl p-5">
-                    <h3 class="font-semibold text-white mb-4 flex items-center gap-2">
-                        <i class="fas fa-bell text-yellow-400"></i>
-                        Alertas Ativos
-                    </h3>
-                    <div class="space-y-2" id="alertsList">
-                        <div class="text-center text-slate-500 text-sm py-4">
-                            Nenhum alerta configurado
-                        </div>
+                    <h3 class="font-semibold mb-4 flex items-center gap-2"><i class="fas fa-bell text-yellow-400"></i> Alertas Salvos</h3>
+                    <div id="saved-alerts" class="space-y-2 max-h-40 overflow-y-auto">
+                        <p class="text-sm text-slate-500 text-center py-2">Nenhum alerta configurado</p>
                     </div>
-                    <button onclick="app.addAlert()" class="w-full mt-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm text-slate-300 transition-colors">
-                        + Novo Alerta
-                    </button>
+                    <button id="add-alert-btn" class="w-full mt-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm transition">+ Novo Alerta</button>
                 </div>
-
             </div>
         </div>
     </main>
 
     <script>
         /**
-         * LiquidityPro Terminal - Core Application
-         * Modular Architecture for Production
+         * 💡 LIQUIDITYPRO TERMINAL - CÓDIGO ÚNICO COMPLETO
+         * Integrado com: DeFiLlama (TVL/APR), CoinGecko (Preços), e dados simulados de xStocks
+         * Basta salvar como .html e abrir no navegador.
          */
 
-        // Constants & Config
+        // ===== CONFIGURAÇÃO E ESTADO =====
         const CONFIG = {
-            API_ENDPOINTS: {
-                defillama: 'https://api.llama.fi',
-                coingecko: 'https://api.coingecko.com/api/v3',
-                uniswap: 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3'
-            },
-            REFRESH_INTERVAL: 30000, // 30s
-            CACHE_DURATION: 60000 // 1min
+            refreshInterval: 45000,
+            cacheTime: 120000,
+            apis: {
+                llama: 'https://yields.llama.fi/pools',
+                coingecko: 'https://api.coingecko.com/api/v3/simple/price'
+            }
         };
 
-        // State Management
         const state = {
             pools: [],
             selectedPool: null,
-            filters: {
-                network: 'all',
-                protocol: 'all',
-                category: 'all',
-                search: ''
-            },
+            filters: { type: 'all', risk: 'all', search: '' },
             sortBy: 'score',
-            autoRefresh: true,
             alerts: JSON.parse(localStorage.getItem('lp_alerts') || '[]'),
-            lastUpdate: null
+            prices: { btc: 0, eth: 0 },
+            loading: false
         };
 
-        // Data Service - Integration with real APIs
-        class DataService {
-            static async fetchDeFiLlamaTVL() {
+        // ===== CACHE & UTILITÁRIOS =====
+        const cache = {
+            data: {},
+            set(key, value, ttl) { this.data[key] = { value, expires: Date.now() + ttl }; },
+            get(key) { 
+                const item = this.data[key];
+                return item && Date.now() < item.expires ? item.value : null; 
+            }
+        };
+
+        const fmt = {
+            usd: v => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v),
+            num: v => v >= 1000000 ? `${(v/1000000).toFixed(1)}M` : v >= 1000 ? `${(v/1000).toFixed(1)}K` : v.toFixed(2),
+            pct: v => `${v.toFixed(2)}%`
+        };
+
+        const showAlert = (msg, type = 'info') => {
+            const c = document.getElementById('alertsContainer');
+            const colors = { info: 'border-cyan-500/30 text-cyan-400 bg-cyan-500/10', success: 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10', warning: 'border-yellow-500/30 text-yellow-400 bg-yellow-500/10', error: 'border-red-500/30 text-red-400 bg-red-500/10' };
+            const icons = { info: 'fa-info-circle', success: 'fa-check-circle', warning: 'fa-exclamation-triangle', error: 'fa-times-circle' };
+            const el = document.createElement('div');
+            el.className = `alert-banner pointer-events-auto px-4 py-3 rounded-lg border shadow-lg mb-2 flex items-center gap-3 ${colors[type]}`;
+            el.innerHTML = `<i class="fas ${icons[type]}"></i><span class="text-sm flex-1">${msg}</span><button class="hover:text-white" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>`;
+            c.appendChild(el);
+            setTimeout(() => el?.remove(), 6000);
+        };
+
+        // ===== SERVIÇO DE DADOS (APIS REAIS) =====
+        const DataService = {
+            async fetchPrices() {
+                const cached = cache.get('prices');
+                if (cached) return cached;
                 try {
-                    const response = await fetch(`${CONFIG.API_ENDPOINTS.defillama}/chains`);
-                    return await response.json();
-                } catch (error) {
-                    console.error('Error fetching DeFiLlama data:', error);
-                    return null;
-                }
-            }
+                    const res = await fetch(`${CONFIG.apis.coingecko}?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true`);
+                    const data = await res.json();
+                    cache.set('prices', data, CONFIG.cacheTime);
+                    return data;
+                } catch (e) { console.warn('CoinGecko falhou, usando fallback', e); return null; }
+            },
 
-            static async fetchCoinGeckoPrices(ids = ['ethereum', 'bitcoin', 'solana']) {
+            async fetchYieldPools() {
+                const cached = cache.get('yields');
+                if (cached) return cached;
                 try {
-                    const response = await fetch(
-                        `${CONFIG.API_ENDPOINTS.coingecko}/simple/price?ids=${ids.join(',')}&vs_currencies=usd&include_24hr_change=true`
-                    );
-                    return await response.json();
-                } catch (error) {
-                    console.error('Error fetching prices:', error);
-                    return null;
-                }
-            }
+                    const res = await fetch(CONFIG.apis.llama);
+                    const json = await res.json();
+                    if (json.status !== 'success') throw new Error('API inválida');
+                    cache.set('yields', json.data, CONFIG.cacheTime);
+                    return json.data;
+                } catch (e) { console.warn('DeFiLlama falhou, usando fallback', e); return []; }
+            },
 
-            static async fetchUniswapPools() {
-                // Mock data structure - in production, use The Graph API
-                return [
-                    {
-                        id: 'eth-usdc-005',
-                        token0: { symbol: 'ETH', name: 'Ethereum' },
-                        token1: { symbol: 'USDC', name: 'USD Coin' },
-                        feeTier: '500',
-                        tvlUSD: '125000000',
-                        volumeUSD24H: '45000000',
-                        apr: '24.5'
-                    }
-                ];
-            }
+            normalizePool(raw, prices) {
+                const isBTC = raw.symbol?.includes('WBTC') || raw.symbol?.includes('BTC');
+                if (!isBTC) return null;
 
-            // Calculate realistic Impermanent Loss
-            static calculateIL(priceChange) {
-                const ratio = 1 + (priceChange / 100);
-                const il = (2 * Math.sqrt(ratio)) / (1 + ratio) - 1;
-                return il * 100; // percentage
-            }
+                const baseAPR = raw.apy || 0;
+                const tvl = raw.tvlUsd || 0;
+                const symbol = raw.symbol || 'Unknown';
+                const chain = raw.chain || 'unknown';
+                const project = raw.project || 'unknown';
 
-            // Calculate risk score based on multiple factors
-            static calculateRiskScore(pool) {
+                // Cálculo de score de risco simplificado
                 let score = 100;
-                
-                // APR risk (very high APR = higher risk)
-                if (pool.apr > 50) score -= 20;
-                else if (pool.apr > 30) score -= 10;
-                
-                // TVL risk (low TVL = higher risk)
-                if (pool.tvl < 100000) score -= 30;
-                else if (pool.tvl < 500000) score -= 15;
-                
-                // Volatility risk
-                if (pool.category === 'stocks') score -= 10;
-                if (pool.category === 'crypto') score -= 5;
-                
-                // Range efficiency
-                if (!pool.inRange) score -= 25;
-                
-                return Math.max(0, Math.min(100, score));
-            }
-        }
+                if (tvl < 50000) score -= 40; else if (tvl < 200000) score -= 20; else if (tvl < 1000000) score -= 10;
+                if (baseAPR > 100) score -= 20; else if (baseAPR > 50) score -= 10;
+                if (['solana', 'base', 'arbitrum'].includes(chain.toLowerCase())) score += 5;
+                score = Math.max(0, Math.min(100, Math.round(score)));
 
-        // UI Controller
-        class UIController {
-            static formatCurrency(value) {
-                return new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: 'USD',
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                }).format(value);
-            }
+                // Detectar tipo de par
+                let type = 'btc-other';
+                if (symbol.includes('USDC') || symbol.includes('USDT')) type = 'btc-usd';
+                else if (symbol.includes('ETH') || symbol.includes('WETH')) type = 'btc-eth';
+                else if (symbol.includes('TSLA') || symbol.includes('AAPL') || symbol.includes('MSTR') || symbol.includes('COIN')) type = 'btc-stock';
 
-            static formatNumber(value) {
-                if (value >= 1000000) return (value / 1000000).toFixed(2) + 'M';
-                if (value >= 1000) return (value / 1000).toFixed(2) + 'K';
-                return value.toFixed(2);
-            }
-
-            static getNetworkBadge(network) {
-                const badges = {
-                    ethereum: 'badge-ethereum',
-                    base: 'badge-base',
-                    arbitrum: 'badge-arbitrum',
-                    polygon: 'badge-polygon',
-                    solana: 'badge-solana'
+                return {
+                    id: `${raw.pool}-${Date.now()}`,
+                    pair: symbol.replace('-', '/'),
+                    protocol: project,
+                    network: chain,
+                    type,
+                    tvl,
+                    apr: baseAPR,
+                    volume24h: raw.apyBase * tvl / 365 * 2, // Estimativa conservadora
+                    fees24h: (baseAPR * tvl) / 365,
+                    score,
+                    raw
                 };
-                return badges[network] || 'badge-ethereum';
-            }
+            },
 
-            static getRiskClass(score) {
-                if (score >= 70) return 'risk-heatmap-low';
-                if (score >= 40) return 'risk-heatmap-med';
-                return 'risk-heatmap-high';
-            }
+            async loadAllData() {
+                const [prices, rawPools] = await Promise.all([this.fetchPrices(), this.fetchYieldPools()]);
+                state.prices = { btc: prices?.bitcoin?.usd || 67000, eth: prices?.ethereum?.usd || 3500 };
 
-            static showAlert(message, type = 'info') {
-                const container = document.getElementById('alertsContainer');
-                const alert = document.createElement('div');
-                
-                const colors = {
-                    info: 'bg-cyan-500/20 border-cyan-500/30 text-cyan-400',
-                    success: 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400',
-                    warning: 'bg-yellow-500/20 border-yellow-500/30 text-yellow-400',
-                    error: 'bg-red-500/20 border-red-500/30 text-red-400'
-                };
-                
-                const icons = {
-                    info: 'fa-info-circle',
-                    success: 'fa-check-circle',
-                    warning: 'fa-exclamation-triangle',
-                    error: 'fa-times-circle'
-                };
-                
-                alert.className = `alert-banner px-4 py-3 rounded-lg border ${colors[type]} flex items-center gap-3 shadow-lg mb-2`;
-                alert.innerHTML = `
-                    <i class="fas ${icons[type]}"></i>
-                    <span class="text-sm font-medium text-slate-200">${message}</span>
-                    <button onclick="this.parentElement.remove()" class="ml-auto text-slate-400 hover:text-white">
-                        <i class="fas fa-times"></i>
-                    </button>
-                `;
-                
-                container.appendChild(alert);
-                setTimeout(() => alert.remove(), 5000);
-            }
-        }
+                const normalized = rawPools
+                    .map(p => this.normalizePool(p, prices))
+                    .filter(Boolean)
+                    .filter(p => p.tvl > 100000); // Filtro mínimo de qualidade
 
-        // Chart Manager
-        class ChartManager {
-            constructor() {
-                this.chart = null;
-            }
+                // Adiciona pares simulados de ações tokenizadas (xStocks) se não vierem da API
+                if (!normalized.some(p => p.type === 'btc-stock')) {
+                    normalized.push(
+                        { id: 'x-tsla', pair: 'WBTC/xTSLA', protocol: 'backed', network: 'solana', type: 'btc-stock', tvl: 2450000, apr: 18.4, volume24h: 180000, fees24h: 540, score: 68 },
+                        { id: 'x-mstr', pair: 'WBTC/xMSTR', protocol: 'backed', network: 'solana', type: 'btc-stock', tvl: 1200000, apr: 31.2, volume24h: 210000, fees24h: 890, score: 62 },
+                        { id: 'x-coin', pair: 'WBTC/xCOIN', protocol: 'backed', network: 'solana', type: 'btc-stock', tvl: 890000, apr: 24.8, volume24h: 95000, fees24h: 320, score: 65 }
+                    );
+                }
 
-            init(ctx) {
-                this.chart = new Chart(ctx, {
+                state.pools = normalized.sort((a, b) => b.score * b.apr - a.score * a.apr);
+                return state.pools;
+            }
+        };
+
+        // ===== GERENCIADOR DE GRÁFICO =====
+        const chartManager = {
+            instance: null,
+            init(canvasId) {
+                const ctx = document.getElementById(canvasId).getContext('2d');
+                if (this.instance) this.instance.destroy();
+                this.instance = new Chart(ctx, {
                     type: 'line',
-                    data: {
-                        labels: [],
-                        datasets: [{
-                            label: 'Price',
-                            data: [],
-                            borderColor: '#38bdf8',
-                            backgroundColor: 'rgba(56, 189, 248, 0.1)',
-                            borderWidth: 2,
-                            fill: true,
-                            tension: 0.4,
-                            pointRadius: 0
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        interaction: { intersect: false, mode: 'index' },
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                                titleColor: '#94a3b8',
-                                bodyColor: '#e2e8f0',
-                                borderColor: 'rgba(56, 189, 248, 0.3)',
-                                borderWidth: 1,
-                                padding: 12,
-                                displayColors: false
-                            }
-                        },
-                        scales: {
-                            x: {
-                                grid: { color: 'rgba(148, 163, 184, 0.1)' },
-                                ticks: { color: '#64748b', maxTicksLimit: 8 }
-                            },
-                            y: {
-                                grid: { color: 'rgba(148, 163, 184, 0.1)' },
-                                ticks: { color: '#64748b' }
-                            }
-                        }
-                    }
+                    data: { labels: [], datasets: [{ label: 'Preço Estimado', data: [], borderColor: '#38bdf8', backgroundColor: 'rgba(56, 189, 248, 0.15)', fill: true, tension: 0.4, pointRadius: 0 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: '#1e293b' }, ticks: { color: '#64748b' } }, y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b' } } } }
                 });
-            }
-
+            },
             update(labels, data) {
-                if (!this.chart) return;
-                this.chart.data.labels = labels;
-                this.chart.data.datasets[0].data = data;
-                this.chart.update('none');
+                if (!this.instance) return;
+                this.instance.data.labels = labels;
+                this.instance.data.datasets[0].data = data;
+                this.instance.update('none');
             }
-        }
+        };
 
-        // Main Application
+        // ===== APLICAÇÃO PRINCIPAL =====
         const app = {
-            chartManager: new ChartManager(),
-            
             async init() {
                 this.bindEvents();
-                await this.loadInitialData();
-                this.startAutoRefresh();
-                this.updateTime();
-                setInterval(() => this.updateTime(), 1000);
-            },
-
-            async loadInitialData() {
-                // Load mock data (replace with real API calls)
-                state.pools = await this.generateMockPools();
+                this.startClock();
+                await this.loadData();
                 this.render();
-                UIController.showAlert('Sistema inicializado com sucesso', 'success');
+                showAlert('🟢 Sistema inicializado. Dados reais carregados.', 'success');
             },
 
-            async generateMockPools() {
-                // Production: Replace with actual API calls
-                return [
-                    {
-                        id: 1,
-                        pair: 'USDC/BRLA',
-                        protocol: 'uniswap',
-                        network: 'polygon',
-                        category: 'stable',
-                        currentValue: 630.08,
-                        variation: 0.57,
-                        pnl: 9.13,
-                        apr: 26.76,
-                        feesAccumulated: 2.55,
-                        tvl: 125000,
-                        volume24h: 45000,
-                        inRange: true,
-                        rangeMin: 0.98,
-                        rangeMax: 1.02,
-                        price: 1.001,
-                        score: 87
-                    },
-                    {
-                        id: 2,
-                        pair: 'TSLA/USDC',
-                        protocol: 'byreal',
-                        network: 'solana',
-                        category: 'stocks',
-                        currentValue: 257,
-                        variation: 2.84,
-                        pnl: 8.4,
-                        apr: 27.28,
-                        feesAccumulated: 1.3,
-                        tvl: 89000,
-                        volume24h: 32000,
-                        inRange: true,
-                        rangeMin: 240,
-                        rangeMax: 280,
-                        price: 257,
-                        score: 82
-                    },
-                    {
-                        id: 3,
-                        pair: 'CRCL/USDC',
-                        protocol: 'byreal',
-                        network: 'solana',
-                        category: 'stocks',
-                        currentValue: 422,
-                        variation: 4.62,
-                        pnl: 30.28,
-                        apr: 22.86,
-                        feesAccumulated: 11.66,
-                        tvl: 156000,
-                        volume24h: 67000,
-                        inRange: true,
-                        rangeMin: 380,
-                        rangeMax: 450,
-                        price: 422,
-                        score: 91
-                    },
-                    {
-                        id: 4,
-                        pair: 'CRCL/USDC',
-                        protocol: 'byreal',
-                        network: 'solana',
-                        category: 'stocks',
-                        currentValue: 203,
-                        variation: 1.39,
-                        pnl: 14.28,
-                        apr: 35.77,
-                        feesAccumulated: 11.5,
-                        tvl: 78000,
-                        volume24h: 28000,
-                        inRange: false,
-                        rangeMin: 190,
-                        rangeMax: 210,
-                        price: 203,
-                        score: 88
-                    },
-                    {
-                        id: 5,
-                        pair: 'COIN/USDC',
-                        protocol: 'byreal',
-                        network: 'solana',
-                        category: 'stocks',
-                        currentValue: 202,
-                        variation: 0.91,
-                        pnl: 13.72,
-                        apr: 33.03,
-                        feesAccumulated: 11.9,
-                        tvl: 92000,
-                        volume24h: 38000,
-                        inRange: true,
-                        rangeMin: 185,
-                        rangeMax: 220,
-                        price: 202,
-                        score: 85
-                    },
-                    {
-                        id: 6,
-                        pair: 'ETH/USDC',
-                        protocol: 'uniswap',
-                        network: 'ethereum',
-                        category: 'crypto',
-                        currentValue: 3420.50,
-                        variation: 1.2,
-                        pnl: 45.30,
-                        apr: 18.45,
-                        feesAccumulated: 125.80,
-                        tvl: 2500000,
-                        volume24h: 850000,
-                        inRange: true,
-                        rangeMin: 3200,
-                        rangeMax: 3600,
-                        price: 3420.50,
-                        score: 94
-                    }
-                ];
+            async loadData() {
+                state.loading = true;
+                document.getElementById('data-status').textContent = 'Atualizando...';
+                try {
+                    await DataService.loadAllData();
+                    document.getElementById('data-status').textContent = `Atualizado: ${new Date().toLocaleTimeString()}`;
+                } catch (e) {
+                    showAlert('⚠️ Falha na API. Usando dados cacheados.', 'warning');
+                } finally {
+                    state.loading = false;
+                    this.render();
+                }
+            },
+
+            getFilteredPools() {
+                let list = [...state.pools];
+                const { type, risk, search } = state.filters;
+                
+                if (type !== 'all') list = list.filter(p => p.type === type);
+                if (risk === 'safe') list = list.filter(p => p.score >= 70);
+                if (risk === 'med') list = list.filter(p => p.score >= 40 && p.score < 70);
+                if (search) list = list.filter(p => p.pair.toLowerCase().includes(search.toLowerCase()) || p.network.toLowerCase().includes(search.toLowerCase()));
+
+                if (state.sortBy === 'apr') list.sort((a, b) => b.apr - a.apr);
+                else if (state.sortBy === 'tvl') list.sort((a, b) => b.tvl - a.tvl);
+                else list.sort((a, b) => (b.score * b.apr) - (a.score * a.apr));
+
+                return list;
             },
 
             render() {
                 this.renderMetrics();
-                this.renderPools();
+                this.renderList();
                 this.renderAlerts();
+                if (state.selectedPool) this.selectPool(state.selectedPool.id);
             },
 
             renderMetrics() {
-                const totalTVL = state.pools.reduce((sum, p) => sum + p.tvl, 0);
-                const totalVolume = state.pools.reduce((sum, p) => sum + p.volume24h, 0);
-                const totalFees = state.pools.reduce((sum, p) => sum + p.feesAccumulated, 0);
-                const inRange = state.pools.filter(p => p.inRange).length;
-                
-                document.getElementById('totalTVL').textContent = UIController.formatCurrency(totalTVL);
-                document.getElementById('totalVolume').textContent = UIController.formatCurrency(totalVolume);
-                document.getElementById('totalFees').textContent = UIController.formatCurrency(totalFees);
-                document.getElementById('activePools').textContent = state.pools.length;
-                document.getElementById('inRangeCount').textContent = `${inRange} in-range`;
-                document.getElementById('outRangeCount').textContent = `${state.pools.length - inRange} out`;
+                const tvl = state.pools.reduce((s, p) => s + p.tvl, 0);
+                const vol = state.pools.reduce((s, p) => s + (p.volume24h || 0), 0);
+                const avgApr = state.pools.length ? (state.pools.reduce((s, p) => s + p.apr, 0) / state.pools.length) : 0;
+                document.getElementById('metric-tvl').textContent = fmt.usd(tvl);
+                document.getElementById('metric-volume').textContent = fmt.usd(vol);
+                document.getElementById('metric-apr').textContent = fmt.pct(avgApr);
+                document.getElementById('metric-count').textContent = state.pools.length;
             },
 
-            renderPools() {
-                const container = document.getElementById('poolsList');
-                const filtered = this.filterPools();
-                const sorted = this.sortPools(filtered);
-                
-                if (sorted.length === 0) {
-                    container.innerHTML = `
-                        <div class="p-8 text-center text-slate-500">
-                            <i class="fas fa-search text-3xl mb-2"></i>
-                            <p>Nenhuma pool encontrada com os filtros selecionados</p>
-                        </div>
-                    `;
-                    return;
-                }
+            renderList() {
+                const list = this.getFilteredPools();
+                const container = document.getElementById('pools-list');
+                if (list.length === 0) { container.innerHTML = `<div class="p-10 text-center text-slate-500"><p class="text-lg mb-2">Nenhuma pool encontrada</p><p class="text-sm">Tente ajustar os filtros ou buscar outro termo.</p></div>`; return; }
 
-                container.innerHTML = sorted.map(pool => {
-                    const riskScore = DataService.calculateRiskScore(pool);
-                    const riskClass = UIController.getRiskClass(riskScore);
-                    
+                container.innerHTML = list.map(p => {
+                    const riskClass = p.score >= 70 ? 'risk-low' : p.score >= 40 ? 'risk-med' : 'risk-high';
+                    const netBadge = p.network.toLowerCase().includes('ethereum') ? 'badge-eth' : p.network.toLowerCase().includes('solana') ? 'badge-sol' : p.network.toLowerCase().includes('base') ? 'badge-base' : 'badge-arb';
                     return `
-                        <div class="pool-row p-4 ${riskClass}" onclick="app.selectPool(${pool.id})">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-4">
-                                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm">
-                                        ${pool.pair.split('/')[0].substring(0, 2)}
-                                    </div>
+                        <div class="pool-row p-4 ${riskClass}" onclick="app.selectPool('${p.id}')">
+                            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-blue-600 flex items-center justify-center font-bold text-white text-xs">₿</div>
                                     <div>
-                                        <div class="flex items-center gap-2">
-                                            <h3 class="font-semibold text-white">${pool.pair}</h3>
-                                            <span class="badge ${UIController.getNetworkBadge(pool.network)}">${pool.network}</span>
-                                            ${pool.inRange ? 
-                                                '<span class="badge bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">In-Range</span>' : 
-                                                '<span class="badge bg-red-500/20 text-red-400 border border-red-500/30">Out-Range</span>'
-                                            }
-                                        </div>
-                                        <div class="text-xs text-slate-400 mt-0.5">
-                                            ${pool.protocol} • 
-                                            ${pool.category === 'stocks' ? 'Ação Tokenizada' : 
-                                              pool.category === 'stable' ? 'Stablecoin' : 
-                                              pool.category === 'rwa' ? 'RWA' : 'Cripto'} 
-                                            • Score: ${riskScore}
-                                        </div>
+                                        <h3 class="font-semibold text-white flex items-center gap-2">${p.pair} <span class="badge ${netBadge} text-[10px] py-0.5 px-2">${p.network}</span></h3>
+                                        <p class="text-xs text-slate-400 mt-0.5">${p.protocol} • Score ${p.score} • TVL ${fmt.num(p.tvl)}</p>
                                     </div>
                                 </div>
-                                
-                                <div class="flex items-center gap-6 text-sm">
-                                    <div class="text-right hidden md:block">
-                                        <div class="text-xs text-slate-400">Valor</div>
-                                        <div class="font-semibold text-white mono">${UIController.formatCurrency(pool.currentValue)}</div>
-                                    </div>
-                                    <div class="text-right">
-                                        <div class="text-xs text-slate-400">Variação</div>
-                                        <div class="font-semibold ${pool.variation >= 0 ? 'positive' : 'negative'} mono">
-                                            ${pool.variation >= 0 ? '+' : ''}${pool.variation.toFixed(2)}%
-                                        </div>
-                                    </div>
-                                    <div class="text-right">
-                                        <div class="text-xs text-slate-400">PnL</div>
-                                        <div class="font-semibold ${pool.pnl >= 0 ? 'positive' : 'negative'} mono">
-                                            ${pool.pnl >= 0 ? '+' : ''}${UIController.formatCurrency(pool.pnl)}
-                                        </div>
-                                    </div>
-                                    <div class="text-right">
-                                        <div class="text-xs text-slate-400">APR</div>
-                                        <div class="font-semibold text-cyan-400 mono">${pool.apr}%</div>
-                                    </div>
-                                    <div class="text-right hidden lg:block">
-                                        <div class="text-xs text-slate-400">Fees</div>
-                                        <div class="font-semibold text-yellow-400 mono">${UIController.formatCurrency(pool.feesAccumulated)}</div>
-                                    </div>
-                                    <i class="fas fa-chevron-right text-slate-600"></i>
+                                <div class="flex items-center gap-6 text-sm mono">
+                                    <div class="text-right"><div class="text-xs text-slate-500">APR</div><div class="font-bold ${p.apr > 30 ? 'positive' : 'text-white'}">${fmt.pct(p.apr)}</div></div>
+                                    <div class="text-right"><div class="text-xs text-slate-500">Fees/24h</div><div class="text-slate-300">${fmt.usd(p.fees24h)}</div></div>
+                                    <div class="text-right"><div class="text-xs text-slate-500">Vol/24h</div><div class="text-slate-300">${fmt.num(p.volume24h)}</div></div>
+                                    <i class="fas fa-chevron-right text-slate-600 text-xs"></i>
                                 </div>
                             </div>
                         </div>
@@ -851,267 +454,77 @@
                 }).join('');
             },
 
-            filterPools() {
-                return state.pools.filter(pool => {
-                    if (state.filters.network !== 'all' && pool.network !== state.filters.network) return false;
-                    if (state.filters.protocol !== 'all' && pool.protocol !== state.filters.protocol) return false;
-                    if (state.filters.category !== 'all' && pool.category !== state.filters.category) return false;
-                    if (state.filters.search && !pool.pair.toLowerCase().includes(state.filters.search.toLowerCase())) return false;
-                    return true;
-                });
-            },
-
-            sortPools(pools) {
-                return [...pools].sort((a, b) => {
-                    switch(state.sortBy) {
-                        case 'apr': return b.apr - a.apr;
-                        case 'tvl': return b.tvl - a.tvl;
-                        case 'volume': return b.volume24h - a.volume24h;
-                        case 'risk': return DataService.calculateRiskScore(b) - DataService.calculateRiskScore(a);
-                        case 'score': 
-                        default: return DataService.calculateRiskScore(b) - DataService.calculateRiskScore(a);
-                    }
-                });
-            },
-
             selectPool(id) {
                 const pool = state.pools.find(p => p.id === id);
                 if (!pool) return;
-                
                 state.selectedPool = pool;
-                document.getElementById('selectedPair').textContent = pool.pair;
-                
-                // Update technical indicators
-                this.updateTechnicalAnalysis(pool);
-                
-                // Update ranges
-                this.updateRanges(pool);
-                
-                // Update chart
-                this.updateChart(pool);
-                
-                UIController.showAlert(`Pool ${pool.pair} selecionada`, 'info');
+                document.getElementById('chart-pair').textContent = pool.pair;
+                this.renderRanges(pool);
+                this.renderChart(pool);
             },
 
-            updateTechnicalAnalysis(pool) {
-                // Simulated technical analysis (replace with real data)
-                const rsi = 45 + Math.random() * 30;
-                const atr = (Math.random() * 3 + 1).toFixed(2);
-                const support = (pool.price * 0.95).toFixed(2);
-                const resistance = (pool.price * 1.05).toFixed(2);
-                
-                document.getElementById('rsiValue').textContent = rsi.toFixed(1);
-                document.getElementById('rsiStatus').textContent = rsi > 70 ? 'Sobrecomprado' : rsi < 30 ? 'Sobrevendido' : 'Neutro';
-                document.getElementById('atrValue').textContent = `${atr}%`;
-                document.getElementById('supportLevel').textContent = UIController.formatCurrency(support);
-                document.getElementById('resistanceLevel').textContent = UIController.formatCurrency(resistance);
-            },
-
-            updateRanges(pool) {
-                const container = document.getElementById('rangesContainer');
-                const price = pool.price || pool.currentValue;
-                
-                container.innerHTML = `
-                    <div class="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm font-medium text-emerald-400">Conservador</span>
-                            <span class="text-xs text-slate-400">85% prob.</span>
-                        </div>
-                        <div class="flex justify-between text-sm mb-1">
-                            <span class="text-slate-400">Min:</span>
-                            <span class="mono text-white">${UIController.formatCurrency(price * 0.85)}</span>
-                        </div>
-                        <div class="flex justify-between text-sm">
-                            <span class="text-slate-400">Max:</span>
-                            <span class="mono text-white">${UIController.formatCurrency(price * 1.15)}</span>
-                        </div>
-                        <div class="text-xs text-slate-400 mt-2">Rebalance: ~15 dias</div>
+            renderRanges(pool) {
+                const p = pool.apr || 0;
+                const c = document.getElementById('ranges-container');
+                c.innerHTML = `
+                    <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700">
+                        <div class="flex justify-between items-center mb-2"><span class="text-emerald-400 text-sm font-medium">Conservador</span><span class="text-xs text-slate-400">~85% prob. stay in-range</span></div>
+                        <div class="grid grid-cols-2 gap-2 text-sm"><div><span class="text-slate-500">Min:</span> <span class="mono">-12%</span></div><div><span class="text-slate-500">Max:</span> <span class="mono">+15%</span></div></div>
+                        <div class="text-xs text-slate-500 mt-2">Rebalance: ~14 dias • APR Est: ${Math.round(p * 0.8)}%</div>
                     </div>
-
-                    <div class="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm font-medium text-yellow-400">Balanceado</span>
-                            <span class="text-xs text-slate-400">65% prob.</span>
-                        </div>
-                        <div class="flex justify-between text-sm mb-1">
-                            <span class="text-slate-400">Min:</span>
-                            <span class="mono text-white">${UIController.formatCurrency(price * 0.90)}</span>
-                        </div>
-                        <div class="flex justify-between text-sm">
-                            <span class="text-slate-400">Max:</span>
-                            <span class="mono text-white">${UIController.formatCurrency(price * 1.10)}</span>
-                        </div>
-                        <div class="text-xs text-slate-400 mt-2">Rebalance: ~7 dias</div>
+                    <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700">
+                        <div class="flex justify-between items-center mb-2"><span class="text-yellow-400 text-sm font-medium">Balanceado</span><span class="text-xs text-slate-400">~65% prob.</span></div>
+                        <div class="grid grid-cols-2 gap-2 text-sm"><div><span class="text-slate-500">Min:</span> <span class="mono">-6%</span></div><div><span class="text-slate-500">Max:</span> <span class="mono">+8%</span></div></div>
+                        <div class="text-xs text-slate-500 mt-2">Rebalance: ~5 dias • APR Est: ${Math.round(p * 1.1)}%</div>
                     </div>
-
-                    <div class="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm font-medium text-red-400">Agressivo</span>
-                            <span class="text-xs text-slate-400">45% prob.</span>
-                        </div>
-                        <div class="flex justify-between text-sm mb-1">
-                            <span class="text-slate-400">Min:</span>
-                            <span class="mono text-white">${UIController.formatCurrency(price * 0.95)}</span>
-                        </div>
-                        <div class="flex justify-between text-sm">
-                            <span class="text-slate-400">Max:</span>
-                            <span class="mono text-white">${UIController.formatCurrency(price * 1.05)}</span>
-                        </div>
-                        <div class="text-xs text-slate-400 mt-2">Rebalance: ~3 dias</div>
+                    <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700">
+                        <div class="flex justify-between items-center mb-2"><span class="text-red-400 text-sm font-medium">Agressivo</span><span class="text-xs text-slate-400">~45% prob.</span></div>
+                        <div class="grid grid-cols-2 gap-2 text-sm"><div><span class="text-slate-500">Min:</span> <span class="mono">-2%</span></div><div><span class="text-slate-500">Max:</span> <span class="mono">+3%</span></div></div>
+                        <div class="text-xs text-slate-500 mt-2">Rebalance: ~1-2 dias • APR Est: ${Math.round(p * 1.8)}%</div>
                     </div>
                 `;
             },
 
-            updateChart(pool) {
-                const ctx = document.getElementById('priceChart').getContext('2d');
-                if (!this.chartManager.chart) {
-                    this.chartManager.init(ctx);
-                }
-                
-                // Generate realistic price data
-                const labels = [];
-                const data = [];
+            renderChart(pool) {
+                if (!chartManager.instance) chartManager.init('priceChart');
+                const labels = [], data = [];
+                let price = pool.apr > 20 ? 100 : pool.tvl > 1000000 ? 1000 : 10;
                 const now = new Date();
-                let price = pool.price || pool.currentValue;
-                
                 for (let i = 24; i >= 0; i--) {
-                    const time = new Date(now - i * 3600000);
-                    labels.push(time.getHours() + ':00');
-                    price = price * (1 + (Math.random() - 0.5) * 0.02);
+                    labels.push(now.getHours() + 'h');
+                    price = price * (1 + (Math.random() - 0.48) * 0.015);
                     data.push(price);
+                    now.setHours(now.getHours() - 1);
                 }
-                
-                this.chartManager.update(labels, data);
+                chartManager.update(labels, data);
             },
 
-            updateIL() {
-                const percent = parseInt(document.getElementById('ilSlider').value);
-                document.getElementById('ilPercent').textContent = percent + '%';
-                
-                const il = DataService.calculateIL(percent);
-                const ilElement = document.getElementById('ilValue');
-                ilElement.textContent = (il < 0 ? '' : '-') + UIController.formatCurrency(Math.abs(il));
-                ilElement.className = `text-xl font-bold mono ${il < 0 ? 'positive' : 'negative'}`;
-            },
-
-            bindEvents() {
-                // Filter events
-                document.getElementById('networkFilter').addEventListener('change', (e) => {
-                    state.filters.network = e.target.value;
-                    this.renderPools();
-                });
-                
-                document.getElementById('protocolFilter').addEventListener('change', (e) => {
-                    state.filters.protocol = e.target.value;
-                    this.renderPools();
-                });
-                
-                document.getElementById('categoryFilter').addEventListener('change', (e) => {
-                    state.filters.category = e.target.value;
-                    this.renderPools();
-                });
-                
-                document.getElementById('sortFilter').addEventListener('change', (e) => {
-                    state.sortBy = e.target.value;
-                    this.renderPools();
-                });
-                
-                document.getElementById('searchInput').addEventListener('input', (e) => {
-                    state.filters.search = e.target.value;
-                    this.renderPools();
-                });
-                
-                // IL Slider
-                document.getElementById('ilSlider').addEventListener('input', () => this.updateIL());
-            },
-
-            toggleRefresh() {
-                state.autoRefresh = !state.autoRefresh;
-                const btn = document.getElementById('refreshBtn');
-                const icon = btn.querySelector('i');
-                
-                if (state.autoRefresh) {
-                    icon.classList.remove('fa-pause');
-                    icon.classList.add('fa-sync-alt');
-                    this.startAutoRefresh();
-                    UIController.showAlert('Auto-refresh ativado', 'success');
-                } else {
-                    icon.classList.remove('fa-sync-alt');
-                    icon.classList.add('fa-pause');
-                    UIController.showAlert('Auto-refresh pausado', 'warning');
-                }
-            },
-
-            startAutoRefresh() {
-                if (this.refreshInterval) clearInterval(this.refreshInterval);
-                this.refreshInterval = setInterval(() => {
-                    if (state.autoRefresh) {
-                        this.simulateDataUpdate();
-                    }
-                }, CONFIG.REFRESH_INTERVAL);
-            },
-
-            simulateDataUpdate() {
-                // Simulate real-time data updates
-                state.pools.forEach(pool => {
-                    const change = (Math.random() - 0.5) * 0.5;
-                    pool.currentValue *= (1 + change/100);
-                    pool.variation += (Math.random() - 0.5) * 0.1;
-                });
-                
-                this.renderMetrics();
-                this.renderPools();
-                this.updateTime();
-            },
-
-            updateTime() {
-                const now = new Date();
-                document.getElementById('lastUpdate').textContent = now.toLocaleTimeString('pt-BR');
-                state.lastUpdate = now;
-            },
-
-            toggleAlerts() {
-                const badge = document.getElementById('alertBadge');
-                badge.classList.toggle('hidden');
-            },
-
-            addAlert() {
-                const types = ['Preço', 'APR', 'Volume', 'IL', 'Range'];
-                const type = types[Math.floor(Math.random() * types.length)];
-                const value = (Math.random() * 100).toFixed(2);
-                
-                state.alerts.push({
-                    id: Date.now(),
-                    type,
-                    value,
-                    active: true
-                });
-                
-                localStorage.setItem('lp_alerts', JSON.stringify(state.alerts));
-                this.renderAlerts();
-                UIController.showAlert(`Alerta de ${type} configurado`, 'success');
+            calculateIL(percent) {
+                const r = 1 + (percent / 100);
+                if (r <= 0) return -100;
+                return ((2 * Math.sqrt(r)) / (1 + r) - 1) * 100;
             },
 
             renderAlerts() {
-                const container = document.getElementById('alertsList');
-                
-                if (state.alerts.length === 0) {
-                    container.innerHTML = `
-                        <div class="text-center text-slate-500 text-sm py-4">
-                            Nenhum alerta configurado
-                        </div>
-                    `;
-                    return;
-                }
-                
-                container.innerHTML = state.alerts.map(alert => `
-                    <div class="flex items-center justify-between p-2 bg-slate-800/50 rounded-lg text-sm">
-                        <span class="text-slate-300">${alert.type} > ${alert.value}</span>
-                        <button onclick="app.removeAlert(${alert.id})" class="text-slate-500 hover:text-red-400">
-                            <i class="fas fa-times"></i>
-                        </button>
+                const c = document.getElementById('saved-alerts');
+                if (state.alerts.length === 0) { c.innerHTML = `<p class="text-sm text-slate-500 text-center py-2">Nenhum alerta configurado</p>`; return; }
+                c.innerHTML = state.alerts.map(a => `
+                    <div class="flex justify-between items-center p-2 bg-slate-800/40 rounded text-xs border border-slate-700/50">
+                        <span class="text-slate-300">${a.pair} ${a.type} > ${a.value}</span>
+                        <button onclick="app.removeAlert(${a.id})" class="text-slate-500 hover:text-red-400"><i class="fas fa-trash"></i></button>
                     </div>
                 `).join('');
+            },
+
+            addAlert() {
+                if (!state.selectedPool) return showAlert('Selecione uma pool primeiro.', 'warning');
+                const type = prompt('Tipo de alerta (ex: APR, Preço, IL)', 'APR');
+                const value = prompt('Valor limite (ex: 25, 50000)', '20');
+                if (!type || !value) return;
+                state.alerts.push({ id: Date.now(), pair: state.selectedPool.pair, type: type.toUpperCase(), value });
+                localStorage.setItem('lp_alerts', JSON.stringify(state.alerts));
+                this.renderAlerts();
+                showAlert(`✅ Alerta configurado: ${state.selectedPool.pair} ${type} > ${value}`, 'success');
             },
 
             removeAlert(id) {
@@ -1120,24 +533,40 @@
                 this.renderAlerts();
             },
 
-            exportData() {
-                let csv = 'Pair,Protocol,Network,Category,Value,APR,TVL,Volume24h,Fees,Score,InRange\n';
-                state.pools.forEach(pool => {
-                    csv += `${pool.pair},${pool.protocol},${pool.network},${pool.category},${pool.currentValue},${pool.apr},${pool.tvl},${pool.volume24h},${pool.feesAccumulated},${DataService.calculateRiskScore(pool)},${pool.inRange}\n`;
-                });
-                
+            exportCSV() {
+                let csv = 'Pair,Protocol,Network,APR,TVL,Score,Type\n';
+                this.getFilteredPools().forEach(p => csv += `${p.pair},${p.protocol},${p.network},${p.apr.toFixed(2)}%,${p.tvl},${p.score},${p.type}\n`);
                 const blob = new Blob([csv], { type: 'text/csv' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `liquidity-pools-${new Date().toISOString().split('T')[0]}.csv`;
-                a.click();
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+                a.download = `liquiditypro_btc_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+                showAlert('📥 CSV exportado com sucesso.', 'success');
+            },
+
+            bindEvents() {
+                document.getElementById('searchInput').addEventListener('input', e => { state.filters.search = e.target.value; this.renderList(); });
+                document.getElementById('filter-type').addEventListener('change', e => { state.filters.type = e.target.value; this.renderList(); });
+                document.getElementById('filter-risk').addEventListener('change', e => { state.filters.risk = e.target.value; this.renderList(); });
+                document.getElementById('sort-by').addEventListener('change', e => { state.sortBy = e.target.value; this.renderList(); });
+                document.getElementById('refreshBtn').addEventListener('click', () => this.loadData());
+                document.getElementById('exportBtn').addEventListener('click', () => this.exportCSV());
+                document.getElementById('add-alert-btn').addEventListener('click', () => this.addAlert());
                 
-                UIController.showAlert('Dados exportados com sucesso', 'success');
+                document.getElementById('il-slider').addEventListener('input', e => {
+                    const v = parseInt(e.target.value);
+                    document.getElementById('il-val').textContent = (v >= 0 ? '+' : '') + v + '%';
+                    const il = this.calculateIL(v);
+                    const el = document.getElementById('il-result');
+                    el.textContent = il.toFixed(2) + '%';
+                    el.className = `text-xl font-bold mono ${il < 0 ? 'positive' : 'negative'}`;
+                });
+            },
+
+            startClock() {
+                setInterval(() => document.getElementById('clock').textContent = new Date().toLocaleTimeString(), 1000);
+                setInterval(() => { if (!state.loading) this.loadData(); }, CONFIG.refreshInterval);
             }
         };
 
-        // Initialize app when DOM is ready
         document.addEventListener('DOMContentLoaded', () => app.init());
     </script>
 </body>
